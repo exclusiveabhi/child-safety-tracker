@@ -8,7 +8,7 @@ const HomeScreen = ({ route, navigation }) => {
   const { busNumber, driverRoute } = route.params;
   const [location, setLocation] = useState(null);
   const [tracking, setTracking] = useState(false);
-  const [intervalId, setIntervalId] = useState(null);
+  const [locationSubscription, setLocationSubscription] = useState(null);
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -38,26 +38,38 @@ const HomeScreen = ({ route, navigation }) => {
 
     setTracking(true);
 
-    const id = setInterval(async () => {
-      try {
-        await axios.post('http://192.168.144.134:3000/track', {
-          busNumber,
-          latitude: location.latitude,
-          longitude: location.longitude,
-        });
-        console.log('Location sent to server');
-      } catch (error) {
-        console.error('Error sending location:', error);
-      }
-    }, 4000);
+    const subscription = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.High,
+        timeInterval: 4000,
+        distanceInterval: 0,
+      },
+      async (newLocation) => {
+        const { latitude, longitude } = newLocation.coords;
+        setLocation(newLocation.coords);
 
-    setIntervalId(id);
+        try {
+          await axios.post('http://192.168.159.51:3000/track', {
+            busNumber,
+            latitude,
+            longitude,
+          });
+          console.log('Location sent to server');
+        } catch (error) {
+          console.error('Error sending location:', error);
+        }
+      }
+    );
+
+    setLocationSubscription(subscription);
   };
 
   const stopTracking = () => {
-    clearInterval(intervalId);
+    if (locationSubscription) {
+      locationSubscription.remove();
+      setLocationSubscription(null);
+    }
     setTracking(false);
-    setIntervalId(null);
   };
 
   const handleTracking = () => {
