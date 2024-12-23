@@ -10,10 +10,9 @@ const FetchBusLocation = ({ busNumber }) => {
   useEffect(() => {
     const fetchBusLocation = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/bus-location/${busNumber}`);
+        const response = await axios.get(`http://192.168.159.51:3000/bus-location/${busNumber}`);
         if (response.data) {
-          const latitude = 28.8703;
-          const longitude = 78.7571;
+          const { latitude, longitude } = response.data;
           setPosition([latitude, longitude]);
           map.setView([latitude, longitude], 17);
         } else {
